@@ -1,13 +1,16 @@
 package main
 
-import (
-	"fmt"
-	"net/http"
-)
+import "net/http"
 
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
+	if cfg.platform != "dev" {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Reset is only allowed in dev environment."))
+		return
+	}
+
 	cfg.fileserverHits.Store(0)
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	cfg.dbQueries.ResetUsers(r.Context())
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Hits counter Successfully reset to:\nHits: %d", cfg.fileserverHits.Load())
+	w.Write([]byte("Hits reset to 0 and database reset to initial state."))
 }
