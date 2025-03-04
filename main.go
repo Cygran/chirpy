@@ -17,7 +17,17 @@ import (
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatal("DB_URL must be set")
+	}
 	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
+	}
+	JWTSecret := os.Getenv("JWT_SECRET")
+	if JWTSecret == "" {
+		log.Fatal("JWT_SECRET must be set")
+	}
 	const port = "8080"
 	mux := http.NewServeMux()
 	apiCfg := &apiConfig{}
@@ -27,6 +37,7 @@ func main() {
 	}
 	apiCfg.dbQueries = database.New(db)
 	apiCfg.platform = platform
+	apiCfg.jwtSecret = JWTSecret
 	mux.HandleFunc("GET /api/healthz", healthzHandler)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 	mux.HandleFunc("GET /api/chirps", apiCfg.getChirpsHandler)
@@ -48,6 +59,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	dbQueries      *database.Queries
 	platform       string
+	jwtSecret      string
 }
 
 type User struct {
