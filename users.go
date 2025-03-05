@@ -113,9 +113,18 @@ func (cfg *apiConfig) userUpgradeHandler(w http.ResponseWriter, r *http.Request)
 			UserID string `json:"user_id"`
 		} `json:"data"`
 	}
+	headerKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid or missing Authorization header", err)
+		return
+	}
+	if headerKey != cfg.polkaKey {
+		respondWithError(w, http.StatusUnauthorized, "Invalid API Key", err)
+		return
+	}
 	decoder := json.NewDecoder(r.Body)
 	params := webhookRequest{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Couldn't decode paramaters", err)
 		return

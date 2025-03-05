@@ -28,6 +28,10 @@ func main() {
 	if JWTSecret == "" {
 		log.Fatal("JWT_SECRET must be set")
 	}
+	polkaKey := os.Getenv("POLKA_KEY")
+	if polkaKey == "" {
+		log.Fatal("POLKA_KEY must be set")
+	}
 	const port = "8080"
 	mux := http.NewServeMux()
 	apiCfg := &apiConfig{}
@@ -38,6 +42,7 @@ func main() {
 	apiCfg.dbQueries = database.New(db)
 	apiCfg.platform = platform
 	apiCfg.jwtSecret = JWTSecret
+	apiCfg.polkaKey = polkaKey
 	mux.HandleFunc("GET /api/healthz", healthzHandler)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 	mux.HandleFunc("GET /api/chirps", apiCfg.getChirpsHandler)
@@ -65,6 +70,7 @@ type apiConfig struct {
 	dbQueries      *database.Queries
 	platform       string
 	jwtSecret      string
+	polkaKey       string
 }
 
 type User struct {
