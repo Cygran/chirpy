@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -91,4 +92,38 @@ func getCleanedBody(body string, badWords map[string]struct{}) string {
 	}
 	cleaned := strings.Join(words, " ")
 	return cleaned
+}
+
+func (cfg *apiConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid or missing Authorization header", err)
+		return
+	}
+	validatedUserID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unable to validate token", err)
+		return
+	}
+	idString := r.PathValue("chirpID")
+	id, err := uuid.Parse(idString)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID format", err)
+		return
+	}
+	chirp, err := cfg.dbQueries.ChirpsById(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "Chirp not found", nil)
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, "Database query failed", err)
+		return
+	}
+	if chirp.UserID != validatedUserID {
+		respondWithError(w, http.StatusForbidden, "You cannot delete someone elses chirp", err)
+		return
+	}
+	cfg.dbQueries.DeleteChrip(r.Context(), id)
+	w.WriteHeader(http.StatusNoContent)
 }
