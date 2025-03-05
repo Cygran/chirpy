@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/cygran/chirpy/internal/database"
 	"github.com/google/uuid"
@@ -12,7 +13,14 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		dbChirps []database.Chirp
 		err      error
 	)
-
+	sortQuery := r.URL.Query().Get("sort")
+	if sortQuery == "" {
+		sortQuery = "asc"
+	}
+	if sortQuery != "asc" && sortQuery != "desc" {
+		respondWithError(w, http.StatusBadRequest, "Invalid sort query", err)
+		return
+	}
 	idString := r.URL.Query().Get("author_id")
 	if idString != "" {
 		authorId, err := uuid.Parse(idString)
@@ -30,6 +38,15 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps", err)
 			return
+		}
+		if sortQuery == "desc" {
+			sort.Slice(dbChirps, func(i, j int) bool {
+				return dbChirps[i].CreatedAt.After(dbChirps[j].CreatedAt)
+			})
+		} else if sortQuery == "asc" {
+			sort.Slice(dbChirps, func(i, j int) bool {
+				return dbChirps[i].CreatedAt.Before(dbChirps[j].CreatedAt)
+			})
 		}
 	}
 

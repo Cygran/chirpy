@@ -43,19 +43,28 @@ func main() {
 	apiCfg.platform = platform
 	apiCfg.jwtSecret = JWTSecret
 	apiCfg.polkaKey = polkaKey
+	// /api/healthz
 	mux.HandleFunc("GET /api/healthz", healthzHandler)
+	// /api/admin (do not document)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
+	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
+	// /api/chirps
 	mux.HandleFunc("GET /api/chirps", apiCfg.getChirpsHandler)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getChirpsByIdHandler)
-	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 	mux.HandleFunc("POST /api/chirps", apiCfg.createChirpHandler)
-	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
-	mux.HandleFunc("POST /api/login", apiCfg.loginHandler)
-	mux.HandleFunc("POST /api/refresh", apiCfg.refreshHandler)
-	mux.HandleFunc("POST /api/revoke", apiCfg.revokeHandler)
-	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.userUpgradeHandler)
-	mux.HandleFunc("PUT /api/users", apiCfg.usersHandler)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.deleteChirpHandler)
+	// /api/users
+	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
+	mux.HandleFunc("PUT /api/users", apiCfg.usersHandler)
+
+	mux.HandleFunc("POST /api/login", apiCfg.loginHandler)
+
+	mux.HandleFunc("POST /api/refresh", apiCfg.refreshHandler)
+
+	mux.HandleFunc("POST /api/revoke", apiCfg.revokeHandler)
+	// (do not document)
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.userUpgradeHandler)
+
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
 	server := &http.Server{
 		Handler: mux,
